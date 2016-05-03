@@ -1,0 +1,50 @@
+# use glob syntax.
+syntax: glob
+
+# Compiled files
+*.pyc
+*.pyo
+*.pyd
+*.a
+*.o
+*.so
+*.pyd
+__pycache__
+
+# Other generated files
+# MANIFEST
+
+# Sphinx
+_build
+_generated
+docs/api
+
+
+# Packages/installer info
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+setuptools-*.tar.gz
+
+# Other
+.cache
+.tox
+.*.swp
+*~
+.project
+.pydevproject
+.settings
+.coverage
+cover
+htmlcov
+
+# Mac OSX
+.DS_Store

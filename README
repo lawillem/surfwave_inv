@@ -1,0 +1,14 @@
+Bram Willemsen. 
+bramwillemsen -at- gmail.com
+------------------------------------------------------
+THIS SOFTWARE IS FREE, BUT COMES WITHOUT ANY WARRANTY
+Code contributions are appreciated. 
+I'd love to hear if this program turns out to be useful
+for someone else as well, please send me a message!
+------------------------------------------------------
+About the code: 
+
+An implementation and adaptation of the 1972 Schwab and Knopoff algorithm, applied to near surface exploration.
+The 'contintental model' is used for rayleigh wave dispersion. Figure 11 forms the basis.
+A basic inversion program is included as well using Python
+
