@@ -12,9 +12,8 @@ c_def_step = 5.0
 minfreq    = 5.0
 maxfreq    = 50.0
 freqs      = np.linspace(minfreq, maxfreq, 19)
-#freqs      = np.array([17.5])
 
-
+#See how the jacobian differs with the step lengths chosen (and if it converges).
 perturb_pct_1 = 10.0
 perturb_pct_2 = 1.0 
 perturb_pct_3 = 0.1
