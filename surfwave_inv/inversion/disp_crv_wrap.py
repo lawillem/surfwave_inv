@@ -2,7 +2,7 @@ from ctypes import *
 import numpy as np
 import os
 
-def get_disp_curve(freqs, vp_arr, vs_arr, rho_arr, thick_arr, verbose = 0):
+def get_disp_curve(freqs, vp_arr, vs_arr, rho_arr, thick_arr, verbose = 0, c_min = None, c_def_step=100.0, NQUAD=5):
     
     #get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds, double* phase_vels, double* freqs, int nfreqs, int verbose)
     
@@ -18,6 +18,9 @@ def get_disp_curve(freqs, vp_arr, vs_arr, rho_arr, thick_arr, verbose = 0):
                          np.ctypeslib.ndpointer(c_double, flags="C_CONTIGUOUS"), #phase_vels
                          np.ctypeslib.ndpointer(c_double, flags="C_CONTIGUOUS"), #freqs
                          c_int                                                 , #nfreqs
+                         c_double                                              , #C_min
+                         c_double                                              , #C_def_step
+                         c_int                                                 , #NQUAD
                          c_int                                                 ] #verbose
         return func
     
@@ -26,6 +29,9 @@ def get_disp_curve(freqs, vp_arr, vs_arr, rho_arr, thick_arr, verbose = 0):
     except: #If not, load and setup
         func = load_func()
         get_disp_curve.func = func
+
+    if c_min == None:
+        c_min = 0.5*np.min(vs_arr) #rather conservative
 
     nfreqs = freqs.size
     N      = vp_arr.size
@@ -49,6 +55,9 @@ def get_disp_curve(freqs, vp_arr, vs_arr, rho_arr, thick_arr, verbose = 0):
                       np.ascontiguousarray(phase_vels),
                       np.ascontiguousarray(freqs),
                       c_int(nfreqs),
+                      c_double(c_min),
+                      c_double(c_def_step),
+                      c_int(NQUAD),
                       c_int(verbose)
                       ) 
     except:

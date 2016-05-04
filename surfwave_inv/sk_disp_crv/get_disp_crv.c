@@ -8,7 +8,7 @@
 #include <disp_fun.h>
 #define PI 3.14159265358979323846
 
-int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds, double* phase_vels, double* freqs, int nfreqs, int verbose)
+int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds, double* phase_vels, double* freqs, int nfreqs, double C_min, double C_def_step, int NQUAD, int verbose)
 {
 	/* Evaluates the dispersion function for a material with N layers
 	 * of P velocities alpha, S velocities beta, densities rho and thicknesses d.
@@ -18,7 +18,6 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 	double freq, omega;
 	double *arr1, *arr2, *arr3;
 	double *bot_scales, *top_scales, *mid_scales;
-	double C_min, C_def_step;
 	double bot_val, top_val, mid_val;
 	double bot_val_sc, mid_val_sc, top_val_sc;
 	double bot_C, top_C, mid_C, next_mid_C;
@@ -26,7 +25,7 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 	double B0, B1, B2; //quadratic form constants E, p95. Not using E to avoid confusion with exponent notation
 	double D, quadroot1, quadroot2;
 	double denom_0, denom_1, denom_2;
-	int NQUAD;
+	double num_eps;
 	int ifreq, iquad, MM;
 
 	//allocate arrays
@@ -38,13 +37,12 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 	top_scales = arr2;
 	mid_scales = arr3;
 
-	NQUAD      = 5;     //In book this appears to give very accurate roots.
-	C_min      = 10.0;  //Start at very low velocity to make sure we will be able to find root by looking up.
-	C_def_step = 100.0 + 1.0e-10; //Default step length (some numerical noise to prevent equality, p133.
+	num_eps = 1.0e-13;
+	C_def_step = C_def_step + 1.0e-10; //page 133
 	for(ifreq=0;ifreq<nfreqs;ifreq++) { //loop over frequencies
 		freq  = freqs[ifreq];
 		omega = 2*PI*freq;
-		if(verbose) printf("Starting loop for omega %e\n", omega);
+		if(verbose) printf("Starting loop for frequency %e Hz\n\n", freq);
 
 		//Find root for frequency.
 		//Start with C_min
@@ -55,7 +53,24 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 		top_C = bot_C; //intialize
 		while(1){
 			top_C   = bot_C + C_def_step;
+
+			if (top_C > 0.999*betas[N-1]){//a attempted C larger than bottom Vs will result in Nan. Should never get above there
+				top_C = 0.999*betas[N-1];
+				if(bot_C == top_C){ //Apparently we also had this problem in the last iteration. Will not be able to advance
+					printf("ERROR: Cannot find root below Vs of bottom layer\n");
+					return(3);
+				}
+			}
+
+
 			top_val = eval_rayleigh_disp_fun(N, alphas, betas, rhos, ds, top_scales, omega, top_C);
+
+			if(verbose){
+				printf("----------------------------------------------------\n");
+				printf("Starting outer loop with bot_C %e and top_C %e\n", bot_C, top_C);
+				printf("bot_val = %e and top_val = %e\n", bot_val, top_val);
+				printf("----------------------------------------------------\n");
+			}
 
 			if (top_val == 0){ //if exactly on root. Hard to imagine...
 				phase_vels[ifreq] = top_C;
@@ -72,6 +87,12 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 					//take care of difference in scaling values
 					//normalize scaling towards bot scales (arbitrary choice)
 					//I'm currently scaling in every loop. Not most efficient.
+
+					if(verbose){
+						printf("Starting quadratic loop %i: \n", iquad);
+						printf("bot_C = %e, mid_C = %e, top_C = %e\n",bot_C, mid_C, top_C);
+						printf("bot_val = %e, mid_val = %e, top_val = %e\n\n",bot_val, mid_val, top_val);
+					}
 
 					//init
 					relscale_mid = 1;
@@ -95,20 +116,24 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 							    +mid_val_sc*bot_C*top_C/denom_1
 							    +top_val_sc*bot_C*mid_C/denom_2);
 
-					B1      = -( bot_val_sc*mid_C*top_C/denom_0
-							    +mid_val_sc*bot_C*top_C/denom_1
-								+top_val_sc*bot_C*mid_C/denom_2);
+					B1      = -( bot_val_sc*(mid_C+top_C)/denom_0
+							    +mid_val_sc*(bot_C+top_C)/denom_1
+								+top_val_sc*(bot_C+mid_C)/denom_2);
 
 					B2      = bot_val_sc/denom_0 + mid_val_sc/denom_1 + top_val_sc/denom_2;
 
 
+					printf("%e, %e, %e\n", B0, B1, B2);
+
 					//Quadratic representation: F = B0 + B1*C + B2*C**2
 					//Find root
-					D = B1*B1-4*B2*B0; //determinant
-
+					D = B1*B1-4e0*B2*B0; //determinant
 					if(D<0){ //No roots, should not be possible with our brackets
-						printf("Determinant negative. Should not be possible.\n");
-						printf("EXITING");
+						if(sqrt(D*D) < sqrt(num_eps) && sqrt(mid_val*mid_val) < num_eps){ //We are very close to 0. We actually found a root but numerical accuracy prevents further refinement. sqrt(square) gives abs.
+							break;
+						}
+
+						printf("ERROR: Determinant negative. Should not be possible.\n");
 						return(1); //error
 					}
 
@@ -124,7 +149,12 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 						next_mid_C = quadroot2;
 					}
 					else{ //We are not supposed to end up here. Just leaving it to catch any error in code
-						printf("Root condition statement gives unexpected result. Terminating.\n");
+
+						if(sqrt(mid_val_sc*mid_val_sc) < num_eps){ //We are very close to 0. We actually found a root but numerical accuracy prevents further refinement. sqrt(square) gives abs.
+							break;
+						}
+
+						printf("ERROR: Root condition statement gives unexpected result. Terminating.\n");
 						return(2);
 					}
 
@@ -156,7 +186,10 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 				//Done searching for root, accept mid_C as being close enough.
 				//mid_C is the last quadratic interpolation step
 				phase_vels[ifreq] = mid_C;
-				if(verbose) printf("Finished searching for C for this omega\n");
+				if(verbose){
+					printf("For omega %e, phase velocity %e is selected \n", omega, phase_vels[ifreq]);
+				}
+
 				break; //Stop loop over C, we are done
 			}
 			else{ //if same sign, increase with C_def_step again until we find a bracket. Prepare for next iteration

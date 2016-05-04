@@ -4,8 +4,9 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <stdio.h>
 
-double eval_rayleigh_disp_fun(int N, double* alphas, double* betas, double* rhos, double* ds, double* norm_fact, double omega, double C){
+double eval_rayleigh_disp_fun(int N, double* alphas, double* betas, double* rhos, double* ds, double* norm_facts, double omega, double C){
 	//evaluate dispersion function for given C and omega using FIG 11
 	//remember that C is 0 indexed unlike fortran. So indexes are different
 	//ds = THKNES
@@ -32,13 +33,13 @@ double eval_rayleigh_disp_fun(int N, double* alphas, double* betas, double* rhos
 	//fill arrays
 	for(MM=0;MM<N-1;MM++){ //evaluate interface MM
 		EPS0[MM]   = rhos[MM+1] / rhos[MM];
-		EPS00[MM]  = 2*(betas[MM]*betas[MM] - EPS0[MM]*betas[MM+1]*betas[MM+1]);
+		EPS00[MM]  = 2.0e0*(betas[MM]*betas[MM] - EPS0[MM]*betas[MM+1]*betas[MM+1]);
 		ALPMSQ[MM] = alphas[MM]*alphas[MM];
 		BETMSQ[MM] = betas[MM]*betas[MM];
 	}
 
 	//INITIALIZING, TOP PAGE 127
-	TWOBSQ = 2*betas[0];
+	TWOBSQ = 2.0e0*betas[0]*betas[0];
 	CSQ    = C*C;
 	XK     = omega/C;
 	ALPNSQ = alphas[N-1]*alphas[N-1];
@@ -46,14 +47,15 @@ double eval_rayleigh_disp_fun(int N, double* alphas, double* betas, double* rhos
 	THKNES = ds;
 	EPSIL0 = pow(-1,(N-1))*rhos[0]*rhos[0]/(2*BETNSQ*ALPNSQ*rhos[N-1]*rhos[N-1]);
 
+
 	//initialize quantities (66) for land model
 	GAMMA1 = TWOBSQ/CSQ;
-	GAM1M1 = GAMMA1-1.0;
+	GAM1M1 = GAMMA1-1.0e0;
 	UKNP   = -GAMMA1*GAM1M1;
-	VKNP   = 0.0;
+	VKNP   = 0.0e0;
 	WKNP   = GAM1M1*GAM1M1;
 	RKNP   = GAMMA1*GAMMA1;
-	SKNP   = 0.0;  //land case
+	SKNP   = 0.0e0;  //land case
 	M      = N;
 	L      = M;
 	
@@ -61,13 +63,13 @@ double eval_rayleigh_disp_fun(int N, double* alphas, double* betas, double* rhos
 	for(MM=0;MM<N-1;MM++){ //evaluate interface MM
 		EPS15  = -EPS0[MM];
 		EPS1   = EPS00[MM]/CSQ;
-		EPS2   = EPS1-1.0;
+		EPS2   = EPS1-1.0e0;
 		EPS3   = EPS1-EPS15;
 		EPS4   = EPS2-EPS15;
 		THKKM  = THKNES[MM]*XK;
-		ARGALM = 1.0 - CSQ/ALPMSQ[MM];
+		ARGALM = 1.0e0 - CSQ/ALPMSQ[MM];
 
-		if(ARGALM >= 0.0) goto one_ninety; //goto statements... the horror
+		if(ARGALM >= 0.0e0) goto one_ninety; //goto statements... the horror
 
 		RALPHM = sqrt(-ARGALM);
 		PM     = THKKM*RALPHM;
@@ -77,8 +79,8 @@ double eval_rayleigh_disp_fun(int N, double* alphas, double* betas, double* rhos
 
 		one_eighty:
 
-		ARGBTM=1.0-CSQ/BETMSQ[MM];
-		if(ARGBTM>=0.0) goto two_hundred;
+		ARGBTM=1.0e0-CSQ/BETMSQ[MM];
+		if(ARGBTM>=0.0e0) goto two_hundred;
 		RBETAM=sqrt(-ARGBTM);
 		QM    =THKKM*RBETAM;
 		SINQM =sin(QM);
@@ -89,8 +91,8 @@ double eval_rayleigh_disp_fun(int N, double* alphas, double* betas, double* rhos
 		one_ninety:
 
 		RALPHM = -sqrt(ARGALM);
-		EXPPPM = 0.5*exp(THKKM*RALPHM);
-		EXPMPM = 0.25/EXPPPM;
+		EXPPPM = 0.5e0*exp(THKKM*RALPHM);
+		EXPMPM = 0.25e0/EXPPPM;
 		SINPM  = EXPPPM-EXPMPM;
 		ZETA1  = EXPPPM+EXPMPM;
 		ZETA3  = -RALPHM*SINPM;
@@ -99,8 +101,8 @@ double eval_rayleigh_disp_fun(int N, double* alphas, double* betas, double* rhos
 		two_hundred:
 
 		RBETAM = -sqrt(ARGBTM);
-		EXPPQM = 0.5*exp(THKKM*RBETAM);
-		EXPMQM = 0.25/EXPPQM;
+		EXPPQM = 0.5e0*exp(THKKM*RBETAM);
+		EXPMQM = 0.25e0/EXPPQM;
 		SINQM  = EXPPQM-EXPMQM;
 		ZETA2  = EXPPQM+EXPMQM;
 		ZETA5  = -RBETAM*SINQM;
@@ -112,10 +114,10 @@ double eval_rayleigh_disp_fun(int N, double* alphas, double* betas, double* rhos
 		ZETA7  = ZETA1*ZETA2;
 		ZETA8  = ZETA1*ZETA5;
 		ZETA9  = ZETA1*ZETA6;
-		UKN    = 2.0*UKNP;
+		UKN    = 2.0e0*UKNP;
 		VKN    = VKNP;
 
-		if(2*(MM/2)==MM) goto two_twenty; //if even I guess
+		if(2*(MM/2)!=MM) goto two_twenty; //If odd. In original code the conditional is for even, but MM is zero indexed in C instead of 1 indexed in Fortran. So even in Fortran is odd in C
 
 		XKNP = ZETA4*(ZETA2*VKNP+ZETA6*WKNP)-ZETA7*RKNP+ZETA9*SKNP;
 		ZKNP = ZETA8*VKNP-ZETA7*WKNP+ZETA3*(ZETA5*RKNP+ZETA2*SKNP);
@@ -137,20 +139,22 @@ double eval_rayleigh_disp_fun(int N, double* alphas, double* betas, double* rhos
 		WKNP = EPS4*(-EPS4*KKNP+EPS3*UKN)-EPS3*EPS3*LKNP;
 		RKNP = EPS2*(-EPS2*KKNP+EPS1*UKN)-EPS1*EPS1*LKNP;
 
-
-
 		two_thirty:
 
 		//p132 says, determine max of U,V,S,W and R and normalize everything by that.
 		//Store normalization so that when we do quadratic root search later we can equalize the normalization
-		MAXVAL = UKNP;
-		if (VKNP > MAXVAL) MAXVAL = VKNP;
-		if (SKNP > MAXVAL) MAXVAL = SKNP;
-		if (WKNP > MAXVAL) MAXVAL = WKNP;
-		if (RKNP > MAXVAL) MAXVAL = RKNP;
+		//Use absolute value. Get by getting root of square.
+		MAXVAL = sqrt(UKNP*UKNP);
+		if (sqrt(VKNP*VKNP) > MAXVAL) MAXVAL = sqrt(VKNP*VKNP);
+		if (sqrt(SKNP*SKNP) > MAXVAL) MAXVAL = sqrt(SKNP*SKNP);
+		if (sqrt(WKNP*WKNP) > MAXVAL) MAXVAL = sqrt(WKNP*WKNP);
+		if (sqrt(RKNP*RKNP) > MAXVAL) MAXVAL = sqrt(RKNP*RKNP);
+
+		//printf("TEMPORARILY NOT USING MAXVAL=%e\n",MAXVAL);
+		//MAXVAL = 1e0;
 
 		//normalize
-		norm_fact[MM] = MAXVAL; //store
+		norm_facts[MM] = MAXVAL; //store
 		UKNP = UKNP/MAXVAL;
 		VKNP = VKNP/MAXVAL;
 		SKNP = SKNP/MAXVAL;
@@ -163,11 +167,11 @@ double eval_rayleigh_disp_fun(int N, double* alphas, double* betas, double* rhos
 	//Perform the matrix multiplication of eq (68)
 	//two_forty:
 
-	RALPHN = sqrt(1.0-CSQ/ALPNSQ);
-	RBETAN = sqrt(1.0-CSQ/BETNSQ);
+	RALPHN = -sqrt(1.0e0-CSQ/ALPNSQ);
+	RBETAN = -sqrt(1.0e0-CSQ/BETNSQ);
 	RALRBT = RALPHN*RBETAN;
 	EPSILN = -EPSIL0*CSQ*CSQ/RALRBT;
-	if (2*(N/2) == N) goto two_fifty; //if even I guess
+	if (2*(N/2) != N) goto two_fifty; //If odd. In original code the conditional is for even, but MM is zero indexed in C instead of 1 indexed in Fortran. So even in Fortran is odd in C
 	FRAYL  = EPSILN*(-VKNP*RBETAN+WKNP-RKNP*RALRBT-SKNP*RALPHN);
 	goto four_forty;
 
