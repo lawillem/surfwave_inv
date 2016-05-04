@@ -28,7 +28,7 @@ if platform.system() == 'Linux':  # In macos there seems not to be -g in LDSHARE
 source_path = os.path.join(os.path.dirname(__file__), 'surfwave_inv', 'sk_disp_crv/')
 extension_config = {'surfwave_inv.sk_disp_crv._sk_disp_crv' :
                           { 'sources' : [source_path +'get_disp_crv.c', source_path +'disp_fun.c'],
-                            'extra_compile_args' :  ["-O3","-ffast-math"],
+                            'extra_compile_args' :  ["-O2","-ffast-math"], #FOR SOME REASON I RUN INTO PROBLEMS WITH -03 SOMETIMES
                             'include_dirs' : [np.get_include(), os.path.join(os.path.dirname(__file__), 'surfwave_inv','sk_disp_crv')]
                           },
                    }

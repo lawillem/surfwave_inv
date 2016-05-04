@@ -8,12 +8,35 @@
 #include <disp_fun.h>
 #define PI 3.14159265358979323846
 
-int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds, double* phase_vels, double* freqs, int nfreqs, double C_min, double C_def_step, int NQUAD, int verbose)
+double lin_interp(double left_C, double right_C, double left_val, double right_val){
+	//Do linear interpolation between C values left_C and right_C with left_C > right_C
+	//Return the linear interpolated value between left_val and right_val
+	//This function is called when quadratic interpolation ends up in an unstable case
+	double lin_slope;
+
+	lin_slope = (right_val-left_val)/(right_C-left_C);
+	return left_C-left_val/lin_slope;
+}
+
+int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds, double* phase_vels, double* freqs, int nfreqs, double C_min, double C_def_step, double C_accuracy, int NQUAD, int verbose)
 {
 	/* Evaluates the dispersion function for a material with N layers
 	 * of P velocities alpha, S velocities beta, densities rho and thicknesses d.
 	 * The 'continental model' in figure 10 of Schwab and Knopoff 1972 is implemented.
 	 * Only the code in Figure 11 is used in addition to a quadratic root finding algorithm.
+	 *
+	 * alphas: array of size N with P velocities
+	 * betas: array of size N with S velocities
+	 * rhos: array of size N with densitities
+	 * ds: array of size N-1 with layer thicknesses
+	 * phase_vels: array of size 'nfreqs' to be populated with the solution dispersion curve
+	 * freqs: array of size nfreqs with the frequencies in Hz
+	 * nfreqs: number of frequencies
+	 * C_min: minimum C to start searching at each frequency
+	 * C_def_step: The increment added to C_min in the outer loop when still trying to find bracket. When too large, sometimes error 3 is obtained (robustness needs to be improved)
+	 * C_accuracy: If the bracket size around the root becomes smaller than this, then accept we are close enough
+	 * NQUAD: number of quadratic interpolation steps within the inner loop used to find the root in the bracket
+	 * verbose: Flag used for toggling output
 	 */
 	double freq, omega;
 	double *arr1, *arr2, *arr3;
@@ -79,11 +102,12 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 			}
 
 			//See if bot and top have different sign, then we know a root (zero) must be in between.
-			if (bot_val*top_val < 0){ //We found the bracket. Now do quadratic search
-				mid_C   = 0.5*(top_C + bot_C);
+			if (bot_val*top_val < 0){
+				//We found the bracket. Now do quadratic search
+				mid_C   = 0.5*(top_C + bot_C); //Start with just halving the bracket
 				mid_val = eval_rayleigh_disp_fun(N, alphas, betas, rhos, ds, mid_scales, omega, mid_C);
 
-				//use bot, top and mid to find new C. Do NQUAD steps
+				//use bot, top and mid to find new C. Do NQUAD quadratic search steps
 				for(iquad=0; iquad<NQUAD; iquad++){
 					//take care of difference in scaling values
 					//normalize scaling towards bot scales (arbitrary choice)
@@ -96,6 +120,11 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 					}
 
 					if(sqrt(mid_val*mid_val) < num_eps){ //We are very close to 0. Sometimes rounding errors will cause crashes if we continue. Just accept this solution
+						if(verbose) printf("Close enough to root. Stop searching.\n");
+						break;
+					}
+					else if (top_C - bot_C < C_accuracy){ //if the bracket becomes small enough, we can also decide to stop
+						if(verbose) printf("Desired accuracy is met. Stop searching.\n");
 						break;
 					}
 
@@ -146,17 +175,54 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 					else if(quadroot2 >= bot_C && quadroot2 <= top_C) { //we want root 2
 						next_mid_C = quadroot2;
 					}
-					else{ //We are not supposed to end up here. Just leaving it to catch any error in code
-						printf("ERROR: Root condition statement gives unexpected result. Terminating.\n");
-						return(2);
+					else{
+
+						//It appears we sometimes end up here when we are close to a solution
+						//and some rounding errors bring us here
+						//instead of throwing an error and exiting it may be pragmatic to look at
+						//bot_val, mid_val and top_val together.
+						//If bot_val and mid_val have different sign, then pick next_mid_C in between
+						//bot_C and mid_C based on linear interpolation
+						//Otherwise pick between mid_C and top_C
+
+						if (bot_val*mid_val < 0){ //root should be in between
+							next_mid_C = lin_interp(bot_C, mid_C, bot_val, mid_val);
+						}
+						else if (mid_val*top_val < 0){
+							next_mid_C = lin_interp(mid_C, top_C, mid_val, top_val);
+						}
+						else{
+							//We are not supposed to end up here. Just leaving it to catch any error in code
+							printf("ERROR: Root condition statement gives unexpected result. Terminating.\n");
+							return(2);
+						}
 					}
 
 					//See how the next mid C compares with old mid C
 					//This way we can see what our next bot and top val will be
 
+					//first test if this side of mid_C should contain the 0.
+					//quadratic interpolation sometimes gives unstable results when
+					//two of the three points are very close together.
+					//Do sanity check first
+
 					if(next_mid_C == mid_C){ //if exactly the same, then mid_C must have been root
 						break;
 					}
+					else if (next_mid_C < mid_C){
+						if (bot_val*mid_val > 0){ //if same sign, then next_mid_C is in wrong bracket somehow. Should not have ended up here
+							//do linear interpolation in upper bracket
+							next_mid_C = lin_interp(mid_C, top_C, mid_val, top_val);
+						}
+					}
+					else if (next_mid_C > mid_C){
+						if (top_val*mid_val > 0){ //if same sign, then next_mid_C is in wrong bracket somehow. Should not have ended up here
+							//do linear interpolation in lower bracket
+							next_mid_C = lin_interp(bot_C, mid_C, bot_val, mid_val);
+						}
+					}
+
+
 					else if(next_mid_C < mid_C){ //old mid C becomes top
 						top_C      = mid_C;
 						top_val    = mid_val;
@@ -183,7 +249,7 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 					printf("For omega %e, phase velocity %e is selected \n", omega, phase_vels[ifreq]);
 				}
 
-				break; //Stop loop over C, we are done
+				break; //Stop loop over C, we are done for this frequency
 			}
 			else{ //if same sign, increase with C_def_step again until we find a bracket. Prepare for next iteration
 				bot_C      = top_C;

@@ -8,7 +8,7 @@ for someone else as well, please send me a message!
 ------------------------------------------------------
 About the code: 
 
-An implementation and adaptation of the 1972 Schwab and Knopoff algorithm, applied to near surface exploration.
+An implementation and adaptation of the 1972 Schwab and Knopoff Rayleigh wave dispersion algorithm, applied to near surface exploration.
 The 'contintental model' is used for rayleigh wave dispersion. Figure 11 forms the basis.
 A basic inversion program is included as well using Python
 

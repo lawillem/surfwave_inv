@@ -2,7 +2,7 @@ from ctypes import *
 import numpy as np
 import os
 
-def get_disp_curve(freqs, vp_arr, vs_arr, rho_arr, thick_arr, verbose = 0, c_min = None, c_def_step=10.0, NQUAD=5):
+def get_disp_curve(freqs, vp_arr, vs_arr, rho_arr, thick_arr, verbose = 0, c_min = None, c_def_step=10.0, c_accuracy = 1e-4,  NQUAD=8):
     
     #get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds, double* phase_vels, double* freqs, int nfreqs, int verbose)
     
@@ -20,6 +20,7 @@ def get_disp_curve(freqs, vp_arr, vs_arr, rho_arr, thick_arr, verbose = 0, c_min
                          c_int                                                 , #nfreqs
                          c_double                                              , #C_min
                          c_double                                              , #C_def_step
+                         c_double                                              , #C_accuracy
                          c_int                                                 , #NQUAD
                          c_int                                                 ] #verbose
         return func
@@ -57,6 +58,7 @@ def get_disp_curve(freqs, vp_arr, vs_arr, rho_arr, thick_arr, verbose = 0, c_min
                       c_int(nfreqs),
                       c_double(c_min),
                       c_double(c_def_step),
+                      c_double(c_accuracy),
                       c_int(NQUAD),
                       c_int(verbose)
                       ) 
