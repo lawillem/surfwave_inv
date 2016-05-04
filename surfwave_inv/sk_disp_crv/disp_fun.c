@@ -96,10 +96,10 @@ double eval_rayleigh_disp_fun(int N, double* alphas, double* betas, double* rhos
 		SINPM  = EXPPPM-EXPMPM;
 		ZETA1  = EXPPPM+EXPMPM;
 		ZETA3  = -RALPHM*SINPM;
+
 		goto one_eighty;
 
 		two_hundred:
-
 		RBETAM = -sqrt(ARGBTM);
 		EXPPQM = 0.5e0*exp(THKKM*RBETAM);
 		EXPMQM = 0.25e0/EXPPQM;
@@ -150,9 +150,6 @@ double eval_rayleigh_disp_fun(int N, double* alphas, double* betas, double* rhos
 		if (sqrt(WKNP*WKNP) > MAXVAL) MAXVAL = sqrt(WKNP*WKNP);
 		if (sqrt(RKNP*RKNP) > MAXVAL) MAXVAL = sqrt(RKNP*RKNP);
 
-		//printf("TEMPORARILY NOT USING MAXVAL=%e\n",MAXVAL);
-		//MAXVAL = 1e0;
-
 		//normalize
 		norm_facts[MM] = MAXVAL; //store
 		UKNP = UKNP/MAXVAL;
@@ -171,7 +168,7 @@ double eval_rayleigh_disp_fun(int N, double* alphas, double* betas, double* rhos
 	RBETAN = -sqrt(1.0e0-CSQ/BETNSQ);
 	RALRBT = RALPHN*RBETAN;
 	EPSILN = -EPSIL0*CSQ*CSQ/RALRBT;
-	if (2*(N/2) != N) goto two_fifty; //If odd. In original code the conditional is for even, but MM is zero indexed in C instead of 1 indexed in Fortran. So even in Fortran is odd in C
+	if (2*(N/2) == N) goto two_fifty; //If even. N is not zero indexed, so use even just as in template code
 	FRAYL  = EPSILN*(-VKNP*RBETAN+WKNP-RKNP*RALRBT-SKNP*RALPHN);
 	goto four_forty;
 

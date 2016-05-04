@@ -58,6 +58,7 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 				top_C = 0.999*betas[N-1];
 				if(bot_C == top_C){ //Apparently we also had this problem in the last iteration. Will not be able to advance
 					printf("ERROR: Cannot find root below Vs of bottom layer\n");
+					printf("Empirically, this seems to be resolvable by using smaller c_def_step\n");
 					return(3);
 				}
 			}
@@ -121,9 +122,6 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 								+top_val_sc*(bot_C+mid_C)/denom_2);
 
 					B2      = bot_val_sc/denom_0 + mid_val_sc/denom_1 + top_val_sc/denom_2;
-
-
-					printf("%e, %e, %e\n", B0, B1, B2);
 
 					//Quadratic representation: F = B0 + B1*C + B2*C**2
 					//Find root
