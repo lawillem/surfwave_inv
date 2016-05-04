@@ -37,7 +37,7 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 	top_scales = arr2;
 	mid_scales = arr3;
 
-	num_eps = 1.0e-13;
+	num_eps = 1.0e-12;
 	C_def_step = C_def_step + 1.0e-10; //page 133
 	for(ifreq=0;ifreq<nfreqs;ifreq++) { //loop over frequencies
 		freq  = freqs[ifreq];
@@ -95,6 +95,10 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 						printf("bot_val = %e, mid_val = %e, top_val = %e\n\n",bot_val, mid_val, top_val);
 					}
 
+					if(sqrt(mid_val*mid_val) < num_eps){ //We are very close to 0. Sometimes rounding errors will cause crashes if we continue. Just accept this solution
+						break;
+					}
+
 					//init
 					relscale_mid = 1;
 					relscale_top = 1;
@@ -127,10 +131,6 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 					//Find root
 					D = B1*B1-4e0*B2*B0; //determinant
 					if(D<0){ //No roots, should not be possible with our brackets
-						if(sqrt(D*D) < sqrt(num_eps) && sqrt(mid_val*mid_val) < num_eps){ //We are very close to 0. We actually found a root but numerical accuracy prevents further refinement. sqrt(square) gives abs.
-							break;
-						}
-
 						printf("ERROR: Determinant negative. Should not be possible.\n");
 						return(1); //error
 					}
@@ -147,11 +147,6 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 						next_mid_C = quadroot2;
 					}
 					else{ //We are not supposed to end up here. Just leaving it to catch any error in code
-
-						if(sqrt(mid_val_sc*mid_val_sc) < num_eps){ //We are very close to 0. We actually found a root but numerical accuracy prevents further refinement. sqrt(square) gives abs.
-							break;
-						}
-
 						printf("ERROR: Root condition statement gives unexpected result. Terminating.\n");
 						return(2);
 					}
