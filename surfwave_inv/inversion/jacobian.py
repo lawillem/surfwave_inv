@@ -7,6 +7,8 @@ import numpy as np
 #Such a procedure is currently not implemented.
 def jacobian_vs(freqs, vp_arr, vs_arr, rho_arr, thk_arr, perturb_pct = 0.1, verbose=False, **kwargs):
     #perturb_pct is the percentage change in amplitude of the vs perturbation we use when approximating J 
+    #Xia et al, 1999 ("Estimation of near-surface shear-wave velocity by inversion of Rayleigh waves") suggest using Ridder's method.
+    #Not currently doing this, may be worth investigating in the future.
     
     if perturb_pct <= 0.0:
         raise Exception("Unacceptable perturbation percentage provided")

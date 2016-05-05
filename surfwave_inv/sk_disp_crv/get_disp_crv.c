@@ -48,9 +48,9 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 	double B0, B1, B2; //quadratic form constants E, p95. Not using E to avoid confusion with exponent notation
 	double D, quadroot1, quadroot2;
 	double denom_0, denom_1, denom_2;
-	double num_eps;
+	double num_eps, C_step;
 	int ifreq, iquad, MM;
-
+	int restart_nr_this_freq;
 	//allocate arrays
 	arr1 =(double *) malloc((N-1)*sizeof(double));
 	arr2 =(double *) malloc((N-1)*sizeof(double));
@@ -65,6 +65,8 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 	for(ifreq=0;ifreq<nfreqs;ifreq++) { //loop over frequencies
 		freq  = freqs[ifreq];
 		omega = 2*PI*freq;
+		restart_nr_this_freq = 0;
+		C_step = C_def_step;
 		if(verbose) printf("Starting loop for frequency %e Hz\n\n", freq);
 
 		//Find root for frequency.
@@ -75,14 +77,26 @@ int get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds,
 		//Loop over phase velocities
 		top_C = bot_C; //intialize
 		while(1){
-			top_C   = bot_C + C_def_step;
+			top_C   = bot_C + C_step;
 
 			if (top_C > 0.999*betas[N-1]){//a attempted C larger than bottom Vs will result in Nan. Should never get above there
 				top_C = 0.999*betas[N-1];
 				if(bot_C == top_C){ //Apparently we also had this problem in the last iteration. Will not be able to advance
-					printf("ERROR: Cannot find root below Vs of bottom layer\n");
-					printf("Empirically, this seems to be resolvable by using smaller c_def_step\n");
-					return(3);
+					if (restart_nr_this_freq == 4){
+						printf("ERROR: Cannot find root below Vs of bottom layer\n");
+						printf("Empirically, this seems to sometimes be resolvable by using smaller c_def_step\n");
+						printf("The forward model is sometimes numerically poorly behaved in current implementation.\n");
+						return(3);
+					}
+					else{ //try again for this frequency, use shorter step size
+						restart_nr_this_freq = restart_nr_this_freq + 1; //increment and try again
+						C_step  = C_step/5.0; //quite a lot of steps after 4 failed attempts. But less annoying than starting inversion over again
+
+						printf("REDUCING STEP SIZE TO %e \n", C_step);
+						bot_C   = C_min;
+						bot_val = eval_rayleigh_disp_fun(N, alphas, betas, rhos, ds, bot_scales, omega, bot_C);
+						top_C   = bot_C + C_step;
+					}
 				}
 			}
 

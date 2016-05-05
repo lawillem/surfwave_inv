@@ -40,9 +40,14 @@ setup( # Update these.  Replace 'template' with the name of your extension.
     name = 'surfwave_inv_pkg',
     description = 'A wrapped C code for evaluating dispersion curves using Schwab and Knopoff 1972 applied to an exploration geophysics setting.',
     ext_modules = extensions,
-    
+    install_requires = ['numpy>=1.7',
+                        'scipy>=0.12', #Not sure which version
+                        'matplotlib>=1.3',
+                        'deap',
+                        'setuptools',
+                        # Note: mpi4py is not a strict requirement
+                       ],    
     # Do not change any of these unless you know what you are doing.
-    install_requires = ['setuptools'],
     packages=find_packages(),
     namespace_packages = ['surfwave_inv'],
     zip_safe = False
