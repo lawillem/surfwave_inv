@@ -14,3 +14,13 @@ A basic inversion program is included as well using Python.
 
 This tool will hopefully be sufficient for generating 1D shear wave profiles during small field work experiments. 
 
+download:
+git clone https://github.com/lawillem/surfwave_inv.git
+
+or download the .zip file from the github page.
+
+install:
+python setup.py install --user
+
+inversion example:
+examples/test_inversion.py

@@ -9,18 +9,27 @@ from get_model import model
 vp_arr_true, vs_arr_true, rho_arr_true, thk_arr_true = model()
 
 #Some settings we use. Actually default settings, but leaving them here for easy changing.
-verbose      = False
-minfreq      = 5.0
-maxfreq      = 50.0
-freqs        = np.linspace(minfreq, maxfreq, 19)
-perturb_pct  = 0.1
-c_def_step   = 1.0
-niter_global = 125
+verbose        = False
+minfreq        = 5.0
+maxfreq        = 50.0
+freqs          = np.linspace(minfreq, maxfreq, 19)
+perturb_pct    = 0.1
+c_def_step     = 1.0 #Larger steps are much faster, but currently give unstable results. Need to improve forward model.
+npart_global   = 25
+niter_global   = 75
+max_spd_global = 25.0
 #'true' dispersion curve. This will be the curve we try to fit
 obs = get_disp_curve(freqs, vp_arr_true, vs_arr_true, rho_arr_true, thk_arr_true, verbose = verbose)
 
 #Start inversion. Does not need initial guess for Vs, as we start with a global optimization
-inv_ret_dict = lsqrs_inversion(freqs, obs, vp_arr_true, rho_arr_true, thk_arr_true, niter_global=niter_global, c_def_step = c_def_step, perturb_pct = perturb_pct, verbose=False)
+inv_ret_dict = lsqrs_inversion(freqs, obs, vp_arr_true, rho_arr_true, thk_arr_true, 
+                               max_spd_global=max_spd_global, 
+                               npart_global=npart_global, 
+                               niter_global=niter_global, 
+                               c_def_step = c_def_step, 
+                               perturb_pct = perturb_pct, 
+                               verbose=False)
+
 vs_pso_1     = inv_ret_dict['vs_pso']
 vs_lm_1      = inv_ret_dict['vs_lm']
 
@@ -70,7 +79,14 @@ vp_arr_est  = 0.87*vp_arr_true + 100.0
 rho_arr_est = 1.2*rho_arr_true - 100.0
 
 #Start inversion. Does not need initial guess for Vs, as we start with a global optimization
-inv_ret_dict = lsqrs_inversion(freqs, obs, vp_arr_est, rho_arr_est, thk_arr_true, niter_global=niter_global, c_def_step = c_def_step, perturb_pct = perturb_pct, verbose=False)
+inv_ret_dict = lsqrs_inversion(freqs, obs, vp_arr_est, rho_arr_est, thk_arr_true, 
+                               max_spd_global=max_spd_global, 
+                               npart_global=npart_global, 
+                               niter_global=niter_global, 
+                               c_def_step = c_def_step, 
+                               perturb_pct = perturb_pct, 
+                               verbose=False)
+
 vs_pso_2     = inv_ret_dict['vs_pso']
 vs_lm_2      = inv_ret_dict['vs_lm']
 

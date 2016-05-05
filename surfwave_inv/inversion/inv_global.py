@@ -17,7 +17,7 @@ from deap import benchmarks
 from deap import creator
 from deap import tools
 
-def lsqrs_inv_global(freqs, obs, vp_arr, rho_arr, thk_arr, npart = 0, niter = 1000, c_min = 100.0, c_def_step = 1.0, verbose=False):
+def lsqrs_inv_global(freqs, obs, vp_arr, rho_arr, thk_arr, npart = 0, niter = 1000, max_part_spd=25.0, c_min = 100.0, c_def_step = 1.0, verbose=False):
     #freqs: vector of frequencies (Hz), length nfreqs
     #obs  : vector of observations at those frequencies (i.e. the measured dispersion curve), length N
     #vp_arr: Vector of P-wave velocities with length N
@@ -91,7 +91,7 @@ def lsqrs_inv_global(freqs, obs, vp_arr, rho_arr, thk_arr, npart = 0, niter = 10
         
         #the worse the estimate is, the higher the l2 norm is
         #we want to assign a low fitness to this, so use inverse
-        retval  = 1.0/l2_norm
+        retval  = 1.0/(l2_norm+1e-8) #small epsilon to prevent division by zero. Will not alter optimal solution.
         return retval,
     
     
@@ -107,7 +107,7 @@ def lsqrs_inv_global(freqs, obs, vp_arr, rho_arr, thk_arr, npart = 0, niter = 10
     min_val_arr = empirical_val*c_min*np.ones_like(vp_arr)  
     max_val_arr = (1./np.sqrt(2))*vp_arr #any larger than this and elastic constant lambda becomes negative. Vs at 1/sqrt(2)*Vp will already be unrealistics though
 
-    max_part_speed = 25.0
+    max_part_speed = max_part_spd
     phi_amp        = 2.0
     #l2_norm_wrap will just take a vector vs of length N and return a scalar
     l2_norm_func = functools.partial(l2_norm_wrap, freqs, obs, vp_arr, rho_arr, thk_arr, c_min = c_min, c_def_step=c_def_step, verbose=verbose)

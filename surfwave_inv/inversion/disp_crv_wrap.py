@@ -4,8 +4,6 @@ import os
 
 def get_disp_curve(freqs, vp_arr, vs_arr, rho_arr, thick_arr, verbose = 0, c_min = None, c_def_step=10.0, c_accuracy = 1e-4,  NQUAD=10):
     
-    #get_disp_crv(int N, double* alphas, double* betas, double* rhos, double* ds, double* phase_vels, double* freqs, int nfreqs, int verbose)
-    
     def load_func(): #Will be called only once. Load the function from the so
         lib = cdll.LoadLibrary(os.path.dirname(__file__) +'/../sk_disp_crv/_sk_disp_crv.so') #os.path.dirname(__file__) gets path of this wrapper function
         func = lib.get_disp_crv
