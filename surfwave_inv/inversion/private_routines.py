@@ -7,10 +7,6 @@ def l2_norm_wrap(freqs, obs, vp_arr, rho_arr, thk_arr, vs_arr, **kwargs):
     #vs is the model we want to invert for. 
     #when using partial from functools, can only prepend on left
     #do not want to modify original residual definition to keep order of arguments consistent
-    
-    import matplotlib.pyplot as plt
-    plt.plot(vs_arr)
-    plt.show()
         
     return l2_norm(freqs, obs, vp_arr, vs_arr, rho_arr, thk_arr, **kwargs)
 
