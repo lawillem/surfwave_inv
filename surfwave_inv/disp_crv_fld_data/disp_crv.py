@@ -3,10 +3,12 @@
 
 import numpy as np
 
-def get_disp_crv(data, ts, xs, fmin=4.0, fmax=50.0, cmin=10.0, cmax=400.0, dc = 5.0):
-    #data: 2d shotgather with nt rows and xs cols
-    #ts  : 1d array of times. 
-    #xs  : 1d array of receiver locations
+def get_disp_crv(data, ts, xs, normalize = True, eps=0.0, fmin=4.0, fmax=50.0, cmin=10.0, cmax=400.0, dc = 5.0):
+    #data     : 2d shotgather with nt rows and xs cols
+    #ts       : 1d array of times. 
+    #xs       : 1d array of receiver locations
+    #normalize: divides by the amplitude of the frequency spectrum to compensate spectrum for differences in energy at various frequencies  
+    #eps      : stabilization constant added denominator during division when normalize=True
     
     def float_eq(a, b, epsilon=0.00000001): #convenience function to test for float equality. 
         return abs(a - b) < epsilon
@@ -37,7 +39,6 @@ def get_disp_crv(data, ts, xs, fmin=4.0, fmax=50.0, cmin=10.0, cmax=400.0, dc = 
         raise Exception("Position vector not uniformly spaced. Require for now.")    
     
     #Done with checking
-    xs = xs - xs[np.floor(nx/2)]
 
     #Do FFT in time
     data_fft  = np.fft.fft(data, axis=0)
@@ -59,7 +60,10 @@ def get_disp_crv(data, ts, xs, fmin=4.0, fmax=50.0, cmin=10.0, cmax=400.0, dc = 
         for ifr in xrange(nf):
             freq = freqs[ifr]
             c    = cs[ic]
-            phsspec[-(ic+1), ifr] = np.sum(np.exp(1j*2*np.pi*freq*xs/c)*subs_data_fft[ifr,:]/np.abs(subs_data_fft[ifr,:]) ) 
+            if normalize: #divide b
+                phsspec[-(ic+1), ifr] = np.sum(np.exp(1j*2*np.pi*freq*xs/c)*subs_data_fft[ifr,:]/(np.abs(subs_data_fft[ifr,:]) +eps ) ) 
+            else:
+                phsspec[-(ic+1), ifr] = np.sum(np.exp(1j*2*np.pi*freq*xs/c)*subs_data_fft[ifr,:])
     
     
     
