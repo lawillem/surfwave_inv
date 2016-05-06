@@ -4,7 +4,7 @@
 import numpy as np
 
 def get_disp_crv(data, ts, xs, normalize = True, eps=0.0, fmin=4.0, fmax=50.0, cmin=10.0, cmax=400.0, dc = 5.0):
-    #data     : 2d shotgather with nt rows and xs cols
+    #data     : 2d shotgather with nt rows and nx cols
     #ts       : 1d array of times. 
     #xs       : 1d array of receiver locations
     #normalize: divides by the amplitude of the frequency spectrum to compensate spectrum for differences in energy at various frequencies  
